@@ -1,0 +1,60 @@
+# Ignoreraw or processed datasets to Git
+data/*
+!data/raw/
+data/raw/*
+!data/raw/*.dvc
+
+# Ignore common large file formats used in data science
+*.csv
+*.xlsx
+*.parquet
+*.jsonl
+*.pickle
+*.pkl
+
+
+# Ignore experimental notebooks so they don't clutter production branches
+notebooks/*
+!notebooks/.gitkeep
+.ipynb_checkpoints/
+
+# Local / not part of v1 baseline
+reports/*
+docs/*
+main.py
+requirements.txt
+
+# DVC cache (DVC tracks pointers, not the cache)
+.dvc/cache
+.dvc/tmp
+
+# Ignore local environment variables and GenAI API keys
+.env
+.env.*
+secrets.yaml
+
+# Ignore local virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+
+# Python Artifacts & Caching
+_pycache_/
+*.py[cod]
+*.py[oc]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+wheels/
+*.egg-info
+
+# OS & IDE Specific Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
