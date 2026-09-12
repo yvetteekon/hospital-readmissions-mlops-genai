@@ -100,7 +100,7 @@ dependencies = [
     "pygments==2.15.1",
     "pympler==1.0.1",
     "pynndescent==0.5.10",
-    "pyparsing==3.0.9",
+    "pyparsing>=3.1,<4",
     "pyrsistent==0.19.3",
     "python-dateutil==2.8.2",
     "python-json-logger==2.0.7",
