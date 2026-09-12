@@ -15,12 +15,15 @@ data/raw/*
 
 # Ignore experimental notebooks so they don't clutter production branches
 notebooks/*
-!notebooks/.gitkeep
+!notebooks/01 data preprocess + modeling + post-model analyses.ipynb
 .ipynb_checkpoints/
 
 # Local / not part of v1 baseline
 reports/*
-docs/*
+docs/Clinical_Knowledge_Base_Discharge_Readmission.pdf
+docs/Decile_Analysis_Summary.txt
+docs/Gain_Chart_Summary.txt
+docs/Top_Features_Explanation.txt
 main.py
 requirements.txt
 
