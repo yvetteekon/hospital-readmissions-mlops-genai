@@ -24,8 +24,10 @@ reports/figures/*
 !reports/figures/target distribution.png
 docs/*
 !docs/eda-findings.md
+!tests/data/hospital_readmissions_sample.csv
 main.py
 requirements.txt
+
 
 # DVC cache (DVC tracks pointers, not the cache)
 .dvc/cache
