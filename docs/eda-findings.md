@@ -1,69 +1,65 @@
-# EDA and model findings
+# EDA findings
 
-Short summary of decisions from exploratory analysis and post-model evaluation. Notebooks stay on `chore/exploration-eda`. This file is what `develop` should carry forward.
+Source: `notebooks/01 exploratory data analysis.ipynb`  
+Notebooks stay on `chore/exploration-eda`. This file is what `develop` should carry.
 
-## Target
+## Dataset
 
-- **Outcome:** 30-day hospital readmission (`readmitted`)
-- **Positive class:** patient was readmitted
-- **Task:** binary classification used for **risk ranking and outreach prioritization**, not as a standalone clinical decision
+- **File:** `data/raw/hospital_readmissions.csv`
+- **N:** 25,000 patient encounters
+- **Target:** `readmitted` (`yes` / `no`)
 
-Overall readmission rate in the evaluation set is about **47%**.
+| Column | Role |
+|--------|------|
+| `age` | Age band: `[40-50)` … `[90-100)` |
+| `time_in_hospital` | Length of stay (days) |
+| `n_lab_procedures` | Lab procedures during stay |
+| `n_procedures` | Other procedures during stay |
+| `n_medications` | Distinct medications |
+| `n_outpatient` | Outpatient visits in prior year |
+| `n_inpatient` | Inpatient visits in prior year |
+| `n_emergency` | Emergency visits in prior year |
+| `medical_specialty` | Attending specialty |
+| `diag_1`, `diag_2`, `diag_3` | Primary / secondary / tertiary diagnosis group |
+| `glucose_test`, `A1Ctest` | `no` / `normal` / `high` |
+| `change` | Medication change (`yes` / `no`) |
+| `diabetes_med` | On diabetes medication (`yes` / `no`) |
 
-## Key features
+Derived in EDA only: `n_diabetes_diag` = count of `Diabetes` among `diag_1`–`diag_3` (0–3).
 
-Strongest SHAP drivers of predicted risk:
+## Problem size
 
-| Rank | Feature | Mean \|SHAP\| | Direction |
-|------|---------|---------------|-----------|
-| 1 | `n_inpatient` | 0.32 | More prior inpatient visits → higher risk |
-| 2 | `n_outpatient` | 0.10 | More outpatient visits → higher risk |
-| 3 | `n_procedures` | 0.07 | More procedures → higher risk |
+About **1 in 2 patients** was readmitted (analysis of 25,000 patients). Classes are close to balanced (~47% / 53%).
 
-Utilization history dominates age, diagnoses, and medication counts. High `n_emergency` can also raise risk for some patients, but it is not in the top 3 by average importance.
+Figure: `reports/figures/target distribution.png`
 
-**Implication:** prioritize follow-up for patients with heavy prior inpatient use, then outpatient / procedure volume.
+## Key insight 1 — primary diagnosis by age
 
-## Metric choice
+Heatmap of `diag_1` within each age band (`reports/figures/primary diagnosis by age group.png`):
 
-| Metric | Role in this project |
-|--------|----------------------|
-| ROC-AUC | Overall ranking quality |
-| Precision–Recall | More relevant than ROC because we care about the readmitted class and outreach cost |
-| F0.5 | Precision-leaning operating point when follow-up capacity is limited |
-| F2 | Recall-leaning; in this model it flagged nearly everyone, so it is not operationally useful |
-| Queue rate | Share of patients flagged at a threshold |
-| Lift / gain / deciles | How well ranking concentrates true readmissions |
+- Ages **50 and above:** **Circulatory** is the most common primary diagnosis
+- Ages **under 50:** **Other** is the most common primary diagnosis
 
-**Decision:** do not optimize for F2. High recall required flagging ~87–99% of patients. Prefer a **capacity-aware threshold** or F0.5.
+## Key insight 2 — diabetes diagnosis vs readmission
 
-Example threshold comparison (training/evaluation run):
+A patient can have 0–3 diabetes diagnoses across `diag_1`, `diag_2`, and `diag_3`.
 
-| Objective | Threshold | Precision | Recall | Queue rate |
-|-----------|-----------|-----------|--------|------------|
-| F0.5 | 0.47 | 0.61 | 0.50 | 38% |
-| F1 | 0.35 | 0.49 | 0.92 | 87% |
-| F2 | 0.26 | 0.47 | 1.00 | 99% |
+Hypothesis test at α = 0.05:
 
-Recommended starting point: **threshold ≈ 0.47 (F0.5)** or “flag the top ~40% by predicted probability.”
+- **H0:** diabetes diagnosis is not correlated with readmission
+- **H1:** diabetes diagnosis is correlated with readmission
+- **p-value for `n_diabetes_diag` = 0.53** (> 0.05)
 
-Use `predict_proba` for ROC, PR, gain, and lift. Use hard `predict` labels only after a threshold is chosen.
+**Decision:** accept H0. Diabetes diagnosis count is not a targeting rule.
 
-## Threshold and decile takeaway
+## Feature distributions
 
-- Ranking power is **modest**.
-- Peak KS was around the **top 40%** of patients (about deciles 1–4).
-- At the top 50%, the model captured about 50% of readmissions — close to random selection.
-- Beyond 40–50% outreach, extra contacts add little.
+Utilization counts (`n_outpatient`, `n_inpatient`, `n_emergency`) are mostly 0 with a long tail. Typical stay is ~4 days, ~16 medications, ~43 lab procedures.
 
-**Gain:** the curve stays near the random diagonal; the useful part is the top 40%.
+`Missing` is a real level for specialty and diagnoses — keep those rows.
 
-**Lift:** highest among the very top-ranked patients (about 2.1 at the extreme top), then declines toward 1.0. Top 20% ≈ 1.45 lift; top 40% ≈ 1.28; top 50% ≈ 1.22.
+## Carry into modeling
 
-**Practical rule:** focus care-management resources on the **highest-risk ~40%**. Do not treat the score as a precise individual diagnosis.
-
-## What to build next
-
-- Scoring pipeline should output **probability**, decile/rank, and top contributing features.
-- Streamlit MVP: score a patient, show risk band, show `n_inpatient` / `n_outpatient` / `n_procedures`.
-- Later GenAI/RAG can reuse these findings as knowledge docs, not as a second model.
+- Keep original predictors; `n_diabetes_diag` is optional
+- Ordinal-encode `age`, `glucose_test`, `A1Ctest`
+- One-hot encode specialty, diagnoses, `change`, `diabetes_med`
