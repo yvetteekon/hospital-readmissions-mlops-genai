@@ -15,12 +15,15 @@ data/raw/*
 
 # Ignore experimental notebooks so they don't clutter production branches
 notebooks/*
-!notebooks/.gitkeep
+!notebooks/01 exploratory data analysis.ipynb
 .ipynb_checkpoints/
 
 # Local / not part of v1 baseline
-reports/*
+reports/figures/*
+!reports/figures/primary diagnosis by age group.png
+!reports/figures/target distribution.png
 docs/*
+!docs/eda-findings.md
 main.py
 requirements.txt
 
